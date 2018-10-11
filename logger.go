@@ -36,5 +36,5 @@ func (l *Logger) Error(msg string, err interface{}) {
 }
 
 func getStack() string {
-	return strings.Join(strings.Split(string(debug.Stack()), "\n")[5:], "\n")
+	return strings.Join(strings.Split(string(debug.Stack()), "\n")[7:], "\n")
 }
