@@ -4,7 +4,7 @@ import "sync"
 
 // Config comment
 type Config struct {
-	mu    *sync.Mutex
+	mu    *sync.RWMutex
 	Debug bool
 }
 

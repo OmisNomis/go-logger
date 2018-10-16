@@ -24,12 +24,13 @@ func New(p string, s string) *Logger {
 		PackageName: strings.ToUpper(p),
 		ServiceName: strings.ToUpper(s),
 		Conf: Config{
-			mu: new(sync.Mutex),
+			mu: new(sync.RWMutex),
 		},
 	}
 
 	// Run a listener on a Unix socket
 	go func() {
+		// TODO - Add a temp identfier for mutliple sockets
 		n := fmt.Sprintf(
 			"/tmp/sockets/%s.%s.sock",
 			strings.ToUpper(p), strings.ToUpper(s),
