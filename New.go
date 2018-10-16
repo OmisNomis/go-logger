@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -31,15 +30,17 @@ func New(p string, s string) *Logger {
 
 	// Run a listener on a Unix socket
 	go func() {
-		sock := fmt.Sprintf(
+		n := fmt.Sprintf(
 			"/tmp/sockets/%s.%s.sock",
 			strings.ToUpper(p), strings.ToUpper(s),
 		)
 
-		ln, err := net.Listen("unix", sock)
+		ln, err := net.Listen("unix", n)
 		if err != nil {
 			log.Fatalf("LOGGER: listen error: %+v", err)
 		}
+
+		log.Printf("Socket created. Connect with 'nc -U %s'", n)
 
 		ch := make(chan os.Signal, 1)
 		signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
@@ -52,48 +53,10 @@ func New(p string, s string) *Logger {
 				log.Fatalf("LOGGER: Accept error: %+v", err)
 			}
 
-			logger.handleIncomingMessages(fd)
+			logger.handleIncomingMessage(fd)
 		}
 
 	}()
 
 	return &logger
-}
-
-func (l *Logger) handleShutdown(ln net.Listener, c chan os.Signal) {
-	// Shut down the socket if the application closes
-	go func() {
-		<-c
-		log.Printf("LOGGER: Shutting down unix socket for Logger")
-		ln.Close()
-		os.Exit(0)
-	}()
-}
-
-func (l *Logger) handleIncomingMessages(c net.Conn) {
-	go func() {
-		for {
-			buf := make([]byte, 512)
-			nr, err := c.Read(buf)
-			if err != nil {
-				return
-			}
-
-			data := buf[0:nr]
-			op := strings.Split(strings.ToLower(string(data)), "\n")[0]
-
-			switch op {
-			case "debug":
-				l.Conf.mu.Lock()
-				l.Conf.Debug = !l.Conf.Debug
-				l.Conf.mu.Unlock()
-			case "list":
-				b, err := json.Marshal(l)
-				_, err = c.Write(b)
-				if err != nil {
-					log.Fatal("Writing client error: ", err)
-				}
-			}
-		}
-	}()
 }
