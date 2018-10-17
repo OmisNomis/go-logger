@@ -3,12 +3,14 @@ package logger
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func init() {
@@ -19,21 +21,24 @@ func init() {
 }
 
 // New comment
-func New(p string, s string) *Logger {
+func New(packageName string, serviceName string, enableColours bool) *Logger {
 	logger := Logger{
-		PackageName: strings.ToUpper(p),
-		ServiceName: strings.ToUpper(s),
+		PackageName: strings.ToUpper(packageName),
+		ServiceName: strings.ToUpper(serviceName),
+		Colour:      enableColours,
 		Conf: Config{
 			mu: new(sync.RWMutex),
+			Trace: TraceSettings{
+				Sockets: make(map[net.Conn]string),
+			},
 		},
 	}
 
 	// Run a listener on a Unix socket
 	go func() {
-		// TODO - Add a temp identfier for mutliple sockets
 		n := fmt.Sprintf(
-			"/tmp/sockets/%s.%s.sock",
-			strings.ToUpper(p), strings.ToUpper(s),
+			"/tmp/sockets/%s.%s%d.sock",
+			strings.ToUpper(packageName), strings.ToUpper(serviceName), getRand(),
 		)
 
 		ln, err := net.Listen("unix", n)
@@ -60,4 +65,11 @@ func New(p string, s string) *Logger {
 	}()
 
 	return &logger
+}
+
+func getRand() int {
+	rand.Seed(time.Now().UnixNano())
+	min := 100000000
+	max := 999999999
+	return rand.Intn(max-min) + min
 }
