@@ -6,29 +6,30 @@ import (
 )
 
 // DebugSettings Comment
-type DebugSettings struct {
-	Enabled bool
-	Regex   string
+type debugSettings struct {
+	enabled bool
+	regex   string
 }
 
 // TraceSettings Comment
-type TraceSettings struct {
-	Enabled bool
+type traceSettings struct {
+	enabled bool
 	// String will be a Regex expression
-	Sockets map[net.Conn]string
+	sockets map[net.Conn]string
 }
 
-// Config comment
-type Config struct {
-	mu    *sync.RWMutex
-	Debug DebugSettings
-	Trace TraceSettings
+// LoggerConfig comment
+type loggerConfig struct {
+	mu     *sync.RWMutex
+	socket net.Listener
+	debug  debugSettings
+	trace  traceSettings
 }
 
 // Logger comment
 type Logger struct {
-	PackageName string
-	ServiceName string
-	Colour      bool
-	Conf        Config
+	packageName string
+	serviceName string
+	colour      bool
+	conf        loggerConfig
 }

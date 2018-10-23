@@ -3,7 +3,6 @@ package logger
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 	"strings"
 )
@@ -31,7 +30,7 @@ func (l *Logger) handleIncomingMessage(c net.Conn) {
 			default:
 				_, err := c.Write([]byte(fmt.Sprintf("Command not found: %s\n", cmd)))
 				if err != nil {
-					log.Printf("Writing client error: %+v", err)
+					l.Errorf("Writing client error: %+v", err)
 				}
 			}
 		}
@@ -39,19 +38,19 @@ func (l *Logger) handleIncomingMessage(c net.Conn) {
 }
 
 func (l *Logger) handleTrace(r []string, c net.Conn) {
-	l.Conf.mu.Lock()
-	defer l.Conf.mu.Unlock()
+	l.conf.mu.Lock()
+	defer l.conf.mu.Unlock()
 
 	if len(r) <= 1 {
 		_, err := c.Write([]byte("Invalid number of parameters. Use 'help' to see the syntax.\n"))
 		if err != nil {
-			log.Printf("Writing client error: %+v", err)
+			l.Errorf("Writing client error: %+v", err)
 		}
 		return
 	}
 
 	if r[1] == "off" {
-		delete(l.Conf.Trace.Sockets, c)
+		delete(l.conf.trace.sockets, c)
 	}
 
 	reg := ""
@@ -60,19 +59,16 @@ func (l *Logger) handleTrace(r []string, c net.Conn) {
 	}
 
 	if r[1] == "on" {
-		l.Conf.Trace.Sockets[c] = reg
+		l.conf.trace.sockets[c] = reg
 	}
 
 }
 
 func (l *Logger) handleDebug(r []string, c net.Conn) {
-	l.Conf.mu.Lock()
-	defer l.Conf.mu.Unlock()
-
 	if len(r) <= 1 {
 		_, err := c.Write([]byte("Invalid number of parameters. Use 'help' to see the syntax.\n"))
 		if err != nil {
-			log.Printf("Writing client error: %+v", err)
+			l.Errorf("Writing client error: %+v", err)
 		}
 		return
 	}
@@ -80,14 +76,13 @@ func (l *Logger) handleDebug(r []string, c net.Conn) {
 	if r[1] != "off" && r[1] != "on" {
 		_, err := c.Write([]byte("Second parameter must be 'on' or 'off'\n"))
 		if err != nil {
-			log.Printf("Writing client error: %+v", err)
+			l.Errorf("Writing client error: %+v", err)
 		}
 		return
 	}
 
 	if r[1] == "off" {
-		l.Conf.Debug.Enabled = false
-		l.Conf.Debug.Regex = ""
+		l.toggleDebug(false, "")
 		l.sendStatus(c)
 		return
 	}
@@ -97,24 +92,32 @@ func (l *Logger) handleDebug(r []string, c net.Conn) {
 		reg = r[2]
 	}
 
-	l.Conf.Debug.Enabled = true
-	l.Conf.Debug.Regex = reg
-
+	l.toggleDebug(true, reg)
 	l.sendStatus(c)
 
 }
 
+func (l *Logger) toggleDebug(enabled bool, regex string) {
+	l.conf.mu.Lock()
+	defer l.conf.mu.Unlock()
+
+	l.conf.debug.enabled = enabled
+	l.conf.debug.regex = regex
+
+	return
+}
+
 func (l *Logger) sendStatus(c net.Conn) {
-	l.Conf.mu.RLock()
-	defer l.Conf.mu.RUnlock()
+	l.conf.mu.RLock()
+	defer l.conf.mu.RUnlock()
 
 	res := fmt.Sprintf(
 		"Debug status is set to %t, with a regex of '%s'\n",
-		l.Conf.Debug.Enabled, l.Conf.Debug.Regex,
+		l.conf.debug.enabled, l.conf.debug.regex,
 	)
 	_, err := c.Write([]byte(res))
 	if err != nil {
-		log.Printf("Writing client error: %+v", err)
+		l.Errorf("Writing client error: %+v", err)
 	}
 }
 
@@ -150,6 +153,6 @@ func (l *Logger) getCommands(c net.Conn) {
 
 	_, err := c.Write([]byte(res))
 	if err != nil {
-		log.Printf("Writing client error: %+v", err)
+		l.Errorf("Writing client error: %+v", err)
 	}
 }

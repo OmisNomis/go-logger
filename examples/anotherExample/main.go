@@ -7,7 +7,7 @@ import (
 	l "simonTest/logger"
 )
 
-var logger = l.New("anotherExample", "Main")
+var logger = l.New("anotherExample", "Main", true)
 
 func main() {
 	runTest()
@@ -22,7 +22,7 @@ func runTest() {
 	ticker := time.NewTicker(3 * time.Second)
 	go func() {
 		for range ticker.C {
-			logger.Debug("This is a DEBUG message", "And here's some additiaonal information")
+			logger.Debugf("This is a DEBUG message", "And here's some additiaonal information")
 		}
 	}()
 }

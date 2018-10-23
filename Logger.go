@@ -32,6 +32,42 @@ func (l *Logger) Errorf(msg string, args ...interface{}) {
 	l.output("ERROR", "red", msg, args...)
 }
 
+// Fatal Comment
+func (l *Logger) Fatal(args ...interface{}) {
+	l.output("FATAL", "cyan", "%s", args...)
+	if l.conf.socket != nil {
+		l.conf.socket.Close()
+	}
+	log.Fatal(args...)
+}
+
+// Fatalf Comment
+func (l *Logger) Fatalf(msg string, args ...interface{}) {
+	l.output("FATAL", "cyan", msg, args...)
+	if l.conf.socket != nil {
+		l.conf.socket.Close()
+	}
+	log.Fatal(args...)
+}
+
+// Panic Comment
+func (l *Logger) Panic(args ...interface{}) {
+	l.output("PANIC", "magenta", "%s", args...)
+	if l.conf.socket != nil {
+		l.conf.socket.Close()
+	}
+	log.Panic(args...)
+}
+
+// Panicf Comment
+func (l *Logger) Panicf(msg string, args ...interface{}) {
+	l.output("PANIC", "magenta", msg, args...)
+	if l.conf.socket != nil {
+		l.conf.socket.Close()
+	}
+	log.Panic(args...)
+}
+
 func getStack() string {
 	return strings.Join(strings.Split(string(debug.Stack()), "\n")[7:], "\n")
 }
@@ -40,30 +76,30 @@ func (l *Logger) output(level, colour, msg string, args ...interface{}) {
 	print := true
 
 	if level == "DEBUG" {
-		match, _ := regexp.MatchString(l.Conf.Debug.Regex, msg)
-		if !l.Conf.Debug.Enabled || !match {
+		match, _ := regexp.MatchString(l.conf.debug.regex, fmt.Sprintf(msg, args...))
+		if !l.conf.debug.enabled || !match {
 			print = false
 		}
 	}
 
-	if l.Colour && colour != "" {
+	if l.colour && colour != "" {
 		level = ansi.Color(level, colour)
 	}
 
-	format := fmt.Sprintf("%s %s. %s: %s\n", l.PackageName, l.ServiceName, level, msg)
+	format := fmt.Sprintf("%s %s. %s: %s\n", l.packageName, l.serviceName, level, msg)
 
 	if print {
 		log.Printf(format, args...)
 	}
 
-	if len(l.Conf.Trace.Sockets) > 0 {
-		for s, r := range l.Conf.Trace.Sockets {
-			match, _ := regexp.MatchString(r, msg)
+	if len(l.conf.trace.sockets) > 0 {
+		for s, r := range l.conf.trace.sockets {
+			match, _ := regexp.MatchString(r, fmt.Sprintf(msg, args...))
 			if match {
 				_, err := s.Write([]byte(fmt.Sprintf(format, args...)))
 				if err != nil {
-					log.Printf("Writing client error: %+v", err)
-					delete(l.Conf.Trace.Sockets, s)
+					l.Errorf("Writing client error: %+v", err)
+					delete(l.conf.trace.sockets, s)
 				}
 			}
 		}
