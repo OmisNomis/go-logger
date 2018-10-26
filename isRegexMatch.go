@@ -1,11 +1,10 @@
 package logger
 
 import (
-	"fmt"
 	"regexp"
 )
 
-func (l *Logger) isRegexMatch(msg string, args ...interface{}) bool {
-	match, _ := regexp.MatchString(l.conf.debug.regex, fmt.Sprintf(msg, args...))
+func (l *Logger) isRegexMatch(r string, msg string) bool {
+	match, _ := regexp.MatchString(r, msg)
 	return match
 }

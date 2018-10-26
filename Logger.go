@@ -134,7 +134,7 @@ func (l *Logger) output(level, colour, msg string, args ...interface{}) {
 	print := true
 
 	if level == "DEBUG" {
-		if !l.isDebugEnabled() || !l.isRegexMatch(msg, args...) {
+		if !l.isDebugEnabled() || !l.isRegexMatch(l.conf.debug.regex, fmt.Sprintf(msg, args...)) {
 			print = false
 		}
 	}
